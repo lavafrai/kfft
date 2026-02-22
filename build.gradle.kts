@@ -1,9 +1,12 @@
+import java.util.Properties
+
 plugins {
+    id("maven-publish")
     kotlin("jvm") version "2.3.0"
 }
 
 group = "ru.lavafrai"
-version = "1.0-SNAPSHOT"
+version = "1.0.0"
 
 repositories {
     mavenCentral()
@@ -42,4 +45,42 @@ tasks.register<JavaExec>("runEqualizer") {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+
+val localProperties = Properties().also { props ->
+    val file = rootProject.file("local.properties")
+    if (file.exists()) props.load(file.inputStream())
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = project.group.toString()
+            artifactId = "kfft"
+            version = project.version.toString()
+
+            from(components["kotlin"])
+
+            artifact(tasks.kotlinSourcesJar)
+
+            pom {
+                name.set("kfft")
+                description.set("Kotlin FFT library")
+            }
+        }
+    }
+
+    repositories {
+        val mavenUrl = localProperties.getProperty("maven.url")
+        if (!mavenUrl.isNullOrBlank()) {
+            maven {
+                url = uri(mavenUrl)
+                credentials {
+                    username = localProperties.getProperty("maven.username", "")
+                    password = localProperties.getProperty("maven.password", "")
+                }
+            }
+        }
+    }
 }

@@ -96,7 +96,7 @@ class EqualizerApp : JFrame("KFFT Equalizer") {
 
     init {
         defaultCloseOperation = EXIT_ON_CLOSE
-        preferredSize = Dimension(1100, 750)
+        preferredSize = Dimension(1200, 750)
         layout = BorderLayout()
 
         setupUI()
