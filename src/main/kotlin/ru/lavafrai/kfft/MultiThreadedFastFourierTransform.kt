@@ -10,6 +10,34 @@ import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 
+/**
+ * Multi-threaded Cooley–Tukey radix-2 Fast Fourier Transform.
+ *
+ * Uses a fixed thread pool to parallelize butterfly operations across FFT stages.
+ * Stages with fewer than 4096 butterflies are executed on the calling thread to avoid
+ * thread-dispatch overhead.
+ *
+ * **Input size must be a power of two**; an [IllegalArgumentException] is thrown otherwise.
+ *
+ * This class implements [Closeable] and owns a thread pool that should be shut down
+ * when no longer needed. Usage example:
+ *
+ * ```kotlin
+ * MultiThreadedFastFourierTransform(threads = 4).use { fft ->
+ *     fft.forward(signal, spectrum)
+ * }
+ * ```
+ *
+ * In Java:
+ * ```java
+ * try (var fft = new MultiThreadedFastFourierTransform(4)) {
+ *     fft.forward(signal, spectrum);
+ * }
+ * ```
+ *
+ * @param threads the number of worker threads in the pool.
+ * @see FastFourierTransform for the single-threaded version.
+ */
 class MultiThreadedFastFourierTransform(
     private val threads: Int
 ) : FourierTransform, Closeable {
@@ -20,6 +48,13 @@ class MultiThreadedFastFourierTransform(
         }
     }
 
+    /**
+     * Computes the forward FFT of a real-valued signal using multiple threads.
+     *
+     * @param input the real-valued time-domain signal. Length must be a power of two.
+     * @param output a [ComplexBuffer] of the same size as [input] to receive the spectrum.
+     * @throws IllegalArgumentException if [input] size is not a power of two.
+     */
     override fun forward(input: DoubleArray, output: ComplexBuffer) {
         val n = input.size
         require(isPowerOfTwo(n)) { "FastFourierTransform requires input size to be a power of two, but got $n" }
@@ -31,6 +66,13 @@ class MultiThreadedFastFourierTransform(
         processInPlace(output.real, output.imag, invert = false)
     }
 
+    /**
+     * Computes the inverse FFT, reconstructing the real-valued signal from the full spectrum.
+     *
+     * @param input a [ComplexBuffer] of size N containing the spectrum. Size must be a power of two.
+     * @param output a [DoubleArray] of length N to receive the reconstructed signal.
+     * @throws IllegalArgumentException if [input] size is not a power of two.
+     */
     override fun inverse(input: ComplexBuffer, output: DoubleArray) {
         val n = input.size
         require(isPowerOfTwo(n)) { "FastFourierTransform requires input size to be a power of two, but got $n" }
@@ -138,6 +180,12 @@ class MultiThreadedFastFourierTransform(
         }
     }
 
+    /**
+     * Shuts down the internal thread pool.
+     *
+     * Waits up to 1 second for running tasks to complete. If they do not finish in time,
+     * the pool is forcibly terminated.
+     */
     override fun close() {
         executor.shutdown()
         try {

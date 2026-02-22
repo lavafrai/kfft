@@ -4,7 +4,27 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
+/**
+ * Cooley–Tukey radix-2 Fast Fourier Transform (single-threaded).
+ *
+ * Computes the DFT in O(n log n) time using an iterative in-place algorithm with
+ * bit-reversal permutation. **Input size must be a power of two**; an
+ * [IllegalArgumentException] is thrown otherwise.
+ *
+ * The forward transform writes all N complex bins to the output buffer.
+ * The inverse transform reads all N bins and reconstructs the real-valued signal.
+ *
+ * @see MultiThreadedFastFourierTransform for a parallel version.
+ * @see DiscreteFourierTransform for arbitrary-size inputs (O(n²)).
+ */
 class FastFourierTransform: FourierTransform {
+    /**
+     * Computes the forward FFT of a real-valued signal.
+     *
+     * @param input the real-valued time-domain signal. Length must be a power of two.
+     * @param output a [ComplexBuffer] of the same size as [input] to receive the spectrum.
+     * @throws IllegalArgumentException if [input] size is not a power of two.
+     */
     override fun forward(input: DoubleArray, output: ComplexBuffer) {
         val n = input.size
         require(isPowerOfTwo(n)) { "FastFourierTransform requires input size to be a power of two, but got $n" }
@@ -17,6 +37,13 @@ class FastFourierTransform: FourierTransform {
         processInPlace(output.real, output.imag, invert = false)
     }
 
+    /**
+     * Computes the inverse FFT, reconstructing the real-valued signal from the full spectrum.
+     *
+     * @param input a [ComplexBuffer] of size N containing the spectrum. Size must be a power of two.
+     * @param output a [DoubleArray] of length N to receive the reconstructed signal.
+     * @throws IllegalArgumentException if [input] size is not a power of two.
+     */
     override fun inverse(input: ComplexBuffer, output: DoubleArray) {
         val n = input.size
         require(isPowerOfTwo(n)) { "FastFourierTransform requires input size to be a power of two, but got $n" }

@@ -3,10 +3,11 @@ import java.util.Properties
 plugins {
     id("maven-publish")
     kotlin("jvm") version "2.3.0"
+    id("org.jetbrains.dokka") version "2.0.0"
 }
 
 group = "ru.lavafrai"
-version = "1.0.0"
+version = "1.0.1"
 
 repositories {
     mavenCentral()
@@ -47,6 +48,11 @@ tasks.test {
     useJUnitPlatform()
 }
 
+val javadocJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("javadoc")
+    from(tasks.named("dokkaGenerate"))
+}
+
 
 val localProperties = Properties().also { props ->
     val file = rootProject.file("local.properties")
@@ -63,6 +69,7 @@ publishing {
             from(components["kotlin"])
 
             artifact(tasks.kotlinSourcesJar)
+            artifact(javadocJar)
 
             pom {
                 name.set("kfft")
